@@ -1,8 +1,10 @@
 package com.example.mobilesecurityapp;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -34,8 +36,8 @@ import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String MAPREQUEST_API_KEY = "RuL9yoj7RFxY48DmI4xhhkwaBv7cWF5y";
-    public static final String BREEZOMETER_API_KEY = "8c666930d6914fd092a826bbb854ed3b";
+    private static final String MAPREQUEST_API_KEY = "RuL9yoj7RFxY48DmI4xhhkwaBv7cWF5y";
+    private static final String BREEZOMETER_API_KEY = "8c666930d6914fd092a826bbb854ed3b";
 
     private EditText inputFieldCity;
     private Button buttonFetchData;
@@ -66,11 +68,11 @@ public class MainActivity extends AppCompatActivity {
         // url encoding for spaces
         userInput = userInput.replace(" ", "%20");
         // Construct the URL
-        String url = MessageFormat.format("http://open.mapquestapi.com/geocoding/v1/address?key={0}&location={1}"
+        String url = MessageFormat.format("http://open.mapquestapi.com/geocoding/v1/address?key={0}&location={1},DE"
                 , MAPREQUEST_API_KEY, userInput);
         Log.d("userInput" , userInput);
         Log.d("url" , url);
-        //RequestQueue queue = Volley.newRequestQueue(this);
+
         RequestQueue queue = RequestQueueSingleton.getInstance(this);
         /**
          * JsonObjectRequest takes in five paramaters
@@ -135,14 +137,14 @@ public class MainActivity extends AppCompatActivity {
 
             myMap.forEach((k, v) -> Log.d("k,v", k + ": {" + v[0] + ", " + v[1] + "}"));
             // TODO display options, when user clicks on one fetch the data
-            getWeatherData(myMap);
+            requestWeatherData(myMap);
         }
         catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void getWeatherData(Map<String, Double[]> myMap) {
+    private void requestWeatherData(Map<String, Double[]> myMap) {
 
         Double[] arr = myMap.get("DE");
 
@@ -158,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onResponse(String stringResponse) {
                         if (StringUtils.isNotBlank(stringResponse)) {
                             Log.d("weather", stringResponse);
-                            fetchWeatherData(stringResponse);
+                            parseWeatherData(stringResponse);
 //                            parseCityCoordinates(stringResponse);
                         }
                     }
@@ -173,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void fetchWeatherData(String jsonString) {
+    private void parseWeatherData(String jsonString) {
 
         Log.e("a", "inside weather data");
 
@@ -192,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
 
             System.out.println("weatherText: " + weatherText + ", temp: " + String.valueOf(temparature) + " " + temparatureUnit);
 //            Log.d("a123", MessageFormat.format("Today it's  {0}  . Temparature  {1} {2}", weatherText , String.valueOf(temparature), temparatureUnit));
-            Log.d("-", MessageFormat.format("Feels like {0} {1}. Humidity: {2}",feelsLikeTemparature , feelsLikeTemparatureUnit, relativeHumidity));
+            Log.d("-", MessageFormat.format("Feels like {0} {1}. Humidity: {2}%",feelsLikeTemparature , feelsLikeTemparatureUnit, relativeHumidity));
             Log.d("-", MessageFormat.format("Wind speed: {0} {1}",windSpeed , windSpeedUnit));
 
         }
@@ -212,6 +214,32 @@ public class MainActivity extends AppCompatActivity {
 //            inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
 //        }
 //    }
+
+    public void test(View view) {
+        // setup the alert builder
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Choose an animal");
+
+// add a list
+        String[] animals = {"DE", "US", "camel", "sheep", "goat"};
+        builder.setItems(animals, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+//                switch (which) {
+//                    case 0: // horse
+//                    case 1: // cow
+//                    case 2: // camel
+//                    case 3: // sheep
+//                    case 4: // goat
+                        Log.e("selected" , String.valueOf(which));
+//                }
+            }
+        });
+
+// create and show the alert dialog
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
 
     protected boolean isDeviceOnline() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
