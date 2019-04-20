@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
         // url encoding for spaces
         userInput = userInput.replace(" ", "%20");
         // Construct the URL
-        String url = MessageFormat.format("http://open.mapquestapi.com/geocoding/v1/address?key={0}&location={1},DE"
+        String url = MessageFormat.format("https://open.mapquestapi.com/geocoding/v1/address?key={0}&location={1},DE"
                 , MAPREQUEST_API_KEY, userInput);
         Log.d("userInput" , userInput);
         Log.d("url" , url);
