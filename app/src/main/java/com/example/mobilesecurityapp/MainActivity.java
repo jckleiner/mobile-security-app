@@ -9,9 +9,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -20,7 +17,6 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
@@ -28,11 +24,7 @@ import org.json.JSONObject;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -40,17 +32,14 @@ public class MainActivity extends AppCompatActivity {
     private static final String BREEZOMETER_API_KEY = "8c666930d6914fd092a826bbb854ed3b";
 
     private EditText inputFieldCity;
-    private Button buttonFetchData;
-
-    String response;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         inputFieldCity = findViewById(R.id.editTextCity);
-        buttonFetchData = findViewById(R.id.buttonFetchData);
+
+        // TODO make a new weather with the last saved country request when the app starts
     }
 
     public void requestCityInformation(View view) {
@@ -70,22 +59,11 @@ public class MainActivity extends AppCompatActivity {
         // Construct the URL
         String url = MessageFormat.format("https://open.mapquestapi.com/geocoding/v1/address?key={0}&location={1},DE"
                 , MAPREQUEST_API_KEY, userInput);
+
         Log.d("userInput" , userInput);
         Log.d("url" , url);
 
         RequestQueue queue = RequestQueueSingleton.getInstance(this);
-        /**
-         * JsonObjectRequest takes in five paramaters
-         * Request Type - This specifies the type of the request eg: GET,POST
-         * URL          - This String param specifies the Request URL
-         * JSONObject   - This parameter takes in the POST parameters."null" in
-         *                  case of GET request.
-         * Listener     -This parameter takes in a implementation of Response.Listener()
-         *                 interface which is invoked if the request is successful
-         * Listener     -This parameter takes in a implementation of Error.Listener()
-         *               interface which is invoked if any error is encountered while processing
-         *               the request
-         **/
         StringRequest jsonObjReq = new StringRequest(Request.Method.GET,
                 url,
                 new Response.Listener<String>() {
@@ -108,53 +86,73 @@ public class MainActivity extends AppCompatActivity {
 
     private void parseCityCoordinates(String jsonString) {
         Log.d("response", jsonString);
+        List<Country> countryList =  new ArrayList<>();
 
         try{
             JSONArray jsonArrayAllData = new JSONObject(jsonString).getJSONArray("results");
             JSONArray jsonArrayLocations = jsonArrayAllData.getJSONObject(0).getJSONArray("locations");
-            ArrayList<String> resultList = new ArrayList<>();
-
-            Map<String, Double[]> myMap = new HashMap<>();
-
-
 
             for (int i = 0; i < jsonArrayLocations.length(); i++) {
                 JSONObject currentObject = jsonArrayLocations.getJSONObject(i);
-                String countryCode = currentObject.getString("adminArea1");
-                Log.e("countryCode" , countryCode);
-                if (!myMap.containsKey(countryCode)) {
+                String isoCode = currentObject.getString("adminArea1");
+                Log.e("isoCode" , isoCode);
+
+                if (StringUtils.equals("DE", isoCode)) {
+                    String neighborhood = currentObject.getString("adminArea6");
+                    String city = currentObject.getString("adminArea5");
+                    String state = currentObject.getString("adminArea3");
+                    String countryIsoCode = currentObject.getString("adminArea1");
                     Double lat = currentObject.getJSONObject("latLng").getDouble("lat");
                     Double lng = currentObject.getJSONObject("latLng").getDouble("lng");
-                    Double[] coordinations = {lat, lng};
-//                    resultList.add(countryCode);
-                    myMap.put(countryCode, coordinations);
+                    Country country = new Country(neighborhood, city, state, countryIsoCode, lat, lng);
+
+                    if (country.isValid()) {
+                        countryList.add(country);
+                    }
                 }
             }
-
-            for (String s : resultList) {
-                Log.d("adminArea1", s);
-            }
-
-            myMap.forEach((k, v) -> Log.d("k,v", k + ": {" + v[0] + ", " + v[1] + "}"));
-            // TODO display options, when user clicks on one fetch the data
-            requestWeatherData(myMap);
+            Log.e("list size", Integer.toString(countryList.size()));
+            displayCountryListToUser(countryList);
         }
         catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void requestWeatherData(Map<String, Double[]> myMap) {
+    public void displayCountryListToUser(List<Country> countryList) {
 
-        Double[] arr = myMap.get("DE");
+        if (countryList.isEmpty()) {
+            Toast.makeText(MainActivity.this,"Couldn't find any data for your input", Toast.LENGTH_LONG).show();
+            return;
+        }
 
-        String url = MessageFormat.format("https://api.breezometer.com/weather/v1/current-conditions?lat={0}&lon={1}&key={2}"
-                , arr[0], arr[1], BREEZOMETER_API_KEY);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Please Choose a City");
+        int countryCount = countryList.size();
+        String[] newArr = new String[countryCount];
 
+        for (int i = 0; i < countryCount; i++) {
+            newArr[i] = countryList.get(i).toString();
+        }
+        builder.setItems(newArr, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                requestWeatherData(countryList.get(which));
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+
+    private void requestWeatherData(Country responseCountry) {
+
+        String url = MessageFormat.format("https://api.breezometer.com/weather/v1/current-conditions?lat={0}&lon={1}&key={2}",
+                String.valueOf(responseCountry.getLatitude()), String.valueOf(responseCountry.getLongitude()), BREEZOMETER_API_KEY);
 
         RequestQueue queue = RequestQueueSingleton.getInstance(this);
-        StringRequest jsonObjReq = new StringRequest(Request.Method.GET,
-                url,
+        StringRequest jsonObjReq = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String stringResponse) {
@@ -176,9 +174,6 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void parseWeatherData(String jsonString) {
-
-        Log.e("a", "inside weather data");
-
         try{
             JSONObject jsonObjectData = new JSONObject(jsonString).getJSONObject("data");
 
@@ -191,9 +186,11 @@ public class MainActivity extends AppCompatActivity {
             Double windSpeed = jsonObjectData.getJSONObject("wind").getJSONObject("speed").getDouble("value");
             String windSpeedUnit = jsonObjectData.getJSONObject("wind").getJSONObject("speed").getString("units");
 
+            // TODO display the results to the screen
+
+            // TODO add the last result to the database
 
             System.out.println("weatherText: " + weatherText + ", temp: " + String.valueOf(temparature) + " " + temparatureUnit);
-//            Log.d("a123", MessageFormat.format("Today it's  {0}  . Temparature  {1} {2}", weatherText , String.valueOf(temparature), temparatureUnit));
             Log.d("-", MessageFormat.format("Feels like {0} {1}. Humidity: {2}%",feelsLikeTemparature , feelsLikeTemparatureUnit, relativeHumidity));
             Log.d("-", MessageFormat.format("Wind speed: {0} {1}",windSpeed , windSpeedUnit));
 
@@ -201,7 +198,6 @@ public class MainActivity extends AppCompatActivity {
         catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
 // TODO doesn't work?
@@ -214,32 +210,6 @@ public class MainActivity extends AppCompatActivity {
 //            inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
 //        }
 //    }
-
-    public void test(View view) {
-        // setup the alert builder
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Choose an animal");
-
-// add a list
-        String[] animals = {"DE", "US", "camel", "sheep", "goat"};
-        builder.setItems(animals, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-//                switch (which) {
-//                    case 0: // horse
-//                    case 1: // cow
-//                    case 2: // camel
-//                    case 3: // sheep
-//                    case 4: // goat
-                        Log.e("selected" , String.valueOf(which));
-//                }
-            }
-        });
-
-// create and show the alert dialog
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
 
     protected boolean isDeviceOnline() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
