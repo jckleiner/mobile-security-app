@@ -37,12 +37,14 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/textView"
-        android:layout_width="323dp"
-        android:layout_height="78dp"
-        android:layout_marginStart="44dp"
-        android:layout_marginTop="264dp"
+        android:id="@+id/textViewPreviousSearch"
+        android:layout_width="344dp"
+        android:layout_height="406dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="212dp"
         android:text="TextView"
+        android:textColor="#E91E63"
+        android:textSize="18sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

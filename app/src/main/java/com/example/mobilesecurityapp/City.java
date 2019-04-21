@@ -7,21 +7,22 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.text.MessageFormat;
 
-public class Country {
+public class City {
 
     private String neighborhood;
-    private String city;
+    private String name;
     private String state;
     private String countryIsoCode;
-    private Double longitude;
     private Double latitude;
+    private Double longitude;
+    private WeatherInfo weatherInfo;
 
-    public Country() {
+    public City() {
     }
 
-    public Country(String neighborhood, String city, String state, String countryIsoCode, Double latitude, Double longitude) {
+    public City(String neighborhood, String name, String state, String countryIsoCode, Double latitude, Double longitude) {
         this.neighborhood = neighborhood;
-        this.city = city;
+        this.name = name;
         this.state = state;
         this.countryIsoCode = countryIsoCode;
         this.latitude = latitude;
@@ -31,19 +32,27 @@ public class Country {
     public boolean isValid() {
         return ObjectUtils.allNotNull(this.longitude, this.latitude)
                 && StringUtils.isNoneBlank(this.state, this.countryIsoCode)
-                && !StringUtils.isAllBlank(this.neighborhood, this.city);
+                && !StringUtils.isAllBlank(this.neighborhood, this.name);
     }
 
     @Override
     public @NonNull String toString() {
         String str = null;
-        if (StringUtils.isNotEmpty(this.city)) {
-            str = this.city;
+        if (StringUtils.isNotEmpty(this.name)) {
+            str = this.name;
         }
         else {
             str = this.neighborhood;
         }
         return MessageFormat.format("{0}, {1}, {2}", str, state, countryIsoCode);
+    }
+
+    public WeatherInfo getWeatherInfo() {
+        return weatherInfo;
+    }
+
+    public void setWeatherInfo(WeatherInfo weatherInfo) {
+        this.weatherInfo = weatherInfo;
     }
 
     public String getNeighborhood() {
@@ -54,8 +63,8 @@ public class Country {
         this.neighborhood = neighborhood;
     }
 
-    public String getCity() {
-        return city;
+    public String getName() {
+        return name;
     }
 
     public String getState() {
@@ -74,8 +83,8 @@ public class Country {
         return latitude;
     }
 
-    public void setCity(String city) {
-        this.city = city;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public void setState(String state) {

@@ -2,6 +2,7 @@ package com.example.mobilesecurityapp;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.support.v7.app.AlertDialog;
@@ -10,6 +11,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -32,15 +34,37 @@ public class MainActivity extends AppCompatActivity {
     private static final String BREEZOMETER_API_KEY = "8c666930d6914fd092a826bbb854ed3b";
 
     private EditText inputFieldCity;
+    private TextView textViewPreviousSearch;
+    private DatabaseHelper database;
+    private boolean isAnyCitySaved;
+    private City previousCity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         inputFieldCity = findViewById(R.id.editTextCity);
+        textViewPreviousSearch = findViewById(R.id.textViewPreviousSearch);
+        database = new DatabaseHelper(this);
+
+
+        Cursor results = database.getAllData();
+        while (results.moveToNext()) {
+            // 0:ID  1:neighborhood  2:city  3:state  4:isoCode  5:latitude  6:longitude
+            String neighborhood = results.getString(1);
+            String city = results.getString(2);
+            String state = results.getString(3);
+            String isoCode = results.getString(4);
+            Double latitude = results.getDouble(5);
+            Double longitude = results.getDouble(6);
+            previousCity = new City(neighborhood, city, state, isoCode, latitude, longitude);
+            requestWeatherData(previousCity);
+            updatePreviousCityOnScreen();
+        }
 
         // TODO make a new weather with the last saved country request when the app starts
     }
+
 
     public void requestCityInformation(View view) {
         String userInput = inputFieldCity.getText().toString().trim().toLowerCase();
@@ -86,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void parseCityCoordinates(String jsonString) {
         Log.d("response", jsonString);
-        List<Country> countryList =  new ArrayList<>();
+        List<City> cityList =  new ArrayList<>();
 
         try{
             JSONArray jsonArrayAllData = new JSONObject(jsonString).getJSONArray("results");
@@ -99,45 +123,65 @@ public class MainActivity extends AppCompatActivity {
 
                 if (StringUtils.equals("DE", isoCode)) {
                     String neighborhood = currentObject.getString("adminArea6");
-                    String city = currentObject.getString("adminArea5");
+                    String name = currentObject.getString("adminArea5");
                     String state = currentObject.getString("adminArea3");
                     String countryIsoCode = currentObject.getString("adminArea1");
                     Double lat = currentObject.getJSONObject("latLng").getDouble("lat");
                     Double lng = currentObject.getJSONObject("latLng").getDouble("lng");
-                    Country country = new Country(neighborhood, city, state, countryIsoCode, lat, lng);
+                    City city = new City(neighborhood, name, state, countryIsoCode, lat, lng);
 
-                    if (country.isValid()) {
-                        countryList.add(country);
+                    if (city.isValid()) {
+                        cityList.add(city);
                     }
                 }
             }
-            Log.e("list size", Integer.toString(countryList.size()));
-            displayCountryListToUser(countryList);
+            Log.e("list size", Integer.toString(cityList.size()));
+            displayCountryListToUser(cityList);
         }
         catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void displayCountryListToUser(List<Country> countryList) {
+    private void updatePreviousCityOnScreen() {
 
-        if (countryList.isEmpty()) {
+        if (previousCity == null) {
+            Log.e("previousCity", "previousCity ************** NULL *************");
+            return;
+        }
+
+        if (previousCity.getWeatherInfo() == null) {
+            Log.e("getWeatherInfo", "getWeatherInfo ************** NULL *************");
+            return;
+        }
+
+        if (previousCity != null) {
+            Log.e("city found", "previously saved city found");
+            String text = previousCity.toString() + "\n" + previousCity.getWeatherInfo().toString();
+            textViewPreviousSearch.setText(text);
+        }
+    }
+
+    public void displayCountryListToUser(List<City> cityList) {
+
+        if (cityList.isEmpty()) {
             Toast.makeText(MainActivity.this,"Couldn't find any data for your input", Toast.LENGTH_LONG).show();
             return;
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Please Choose a City");
-        int countryCount = countryList.size();
+        int countryCount = cityList.size();
         String[] newArr = new String[countryCount];
 
         for (int i = 0; i < countryCount; i++) {
-            newArr[i] = countryList.get(i).toString();
+            newArr[i] = cityList.get(i).toString();
         }
         builder.setItems(newArr, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                requestWeatherData(countryList.get(which));
+                City selectedCity = cityList.get(which);
+                requestWeatherData(selectedCity);
             }
         });
 
@@ -146,10 +190,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void requestWeatherData(Country responseCountry) {
+    private void requestWeatherData(City selectedCity) {
 
         String url = MessageFormat.format("https://api.breezometer.com/weather/v1/current-conditions?lat={0}&lon={1}&key={2}",
-                String.valueOf(responseCountry.getLatitude()), String.valueOf(responseCountry.getLongitude()), BREEZOMETER_API_KEY);
+                String.valueOf(selectedCity.getLatitude()), String.valueOf(selectedCity.getLongitude()), BREEZOMETER_API_KEY);
 
         RequestQueue queue = RequestQueueSingleton.getInstance(this);
         StringRequest jsonObjReq = new StringRequest(Request.Method.GET, url,
@@ -158,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onResponse(String stringResponse) {
                         if (StringUtils.isNotBlank(stringResponse)) {
                             Log.d("weather", stringResponse);
-                            parseWeatherData(stringResponse);
+                            parseWeatherData(selectedCity, stringResponse);
 //                            parseCityCoordinates(stringResponse);
                         }
                     }
@@ -173,26 +217,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void parseWeatherData(String jsonString) {
+    private void parseWeatherData(City selectedCity, String jsonString) {
         try{
             JSONObject jsonObjectData = new JSONObject(jsonString).getJSONObject("data");
 
-            String weatherText = jsonObjectData.getString("weather_text");
-            Double temparature = jsonObjectData.getJSONObject("temperature").getDouble("value");
-            String temparatureUnit = jsonObjectData.getJSONObject("temperature").getString("units");
-            Double feelsLikeTemparature = jsonObjectData.getJSONObject("feels_like_temperature").getDouble("value");
-            String feelsLikeTemparatureUnit = jsonObjectData.getJSONObject("feels_like_temperature").getString("units");
-            Double relativeHumidity = jsonObjectData.getDouble("relative_humidity");
-            Double windSpeed = jsonObjectData.getJSONObject("wind").getJSONObject("speed").getDouble("value");
-            String windSpeedUnit = jsonObjectData.getJSONObject("wind").getJSONObject("speed").getString("units");
+            String weatherCondition = jsonObjectData.getString("weather_text");
+            String temperature = jsonObjectData.getJSONObject("temperature").getString("value");
+            String feelsLikeTemperature = jsonObjectData.getJSONObject("feels_like_temperature").getString("value");
+            String relativeHumidity = jsonObjectData.getString("relative_humidity");
+            String windSpeed = jsonObjectData.getJSONObject("wind").getJSONObject("speed").getString("value");
 
-            // TODO display the results to the screen
+            WeatherInfo weatherInfo = new WeatherInfo(weatherCondition, temperature, feelsLikeTemperature, relativeHumidity, windSpeed);
 
-            // TODO add the last result to the database
+            selectedCity.setWeatherInfo(weatherInfo);
 
-            System.out.println("weatherText: " + weatherText + ", temp: " + String.valueOf(temparature) + " " + temparatureUnit);
-            Log.d("-", MessageFormat.format("Feels like {0} {1}. Humidity: {2}%",feelsLikeTemparature , feelsLikeTemparatureUnit, relativeHumidity));
-            Log.d("-", MessageFormat.format("Wind speed: {0} {1}",windSpeed , windSpeedUnit));
+            if (previousCity == null) {
+                boolean isInserted = database.insertData(selectedCity);
+                Log.e("isInserted", String.valueOf(isInserted));
+            }
+            else {
+                boolean isInserted = database.updateData(selectedCity);
+                Log.e("isUpdated", "updated country");
+            }
+            previousCity = selectedCity;
+            updatePreviousCityOnScreen();
+
+            System.out.println("weatherText: " + weatherCondition + ", temp: " + String.valueOf(temperature) + " C");
+            Log.d("-", MessageFormat.format("Feels like {0} {1}. Humidity: {2}%",feelsLikeTemperature , " C", relativeHumidity));
+            Log.d("-", MessageFormat.format("Wind speed: {0} {1}",windSpeed , " km/h"));
 
         }
         catch (Exception e) {
@@ -220,5 +272,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return false;
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Close any open database object.
+        database.close();
+        super.onDestroy();
     }
 }
