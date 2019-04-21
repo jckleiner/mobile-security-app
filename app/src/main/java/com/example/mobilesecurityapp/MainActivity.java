@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         inputFieldCity = findViewById(R.id.editTextCity);
 
-        // TODO make a new weather with the last saved country request when the app starts
+        // TODO make a new weather with the last saved city request when the app starts
     }
 
     public void requestCityInformation(View view) {
@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void parseCityCoordinates(String jsonString) {
         Log.d("response", jsonString);
-        List<Country> countryList =  new ArrayList<>();
+        List<City> cityList =  new ArrayList<>();
 
         try{
             JSONArray jsonArrayAllData = new JSONObject(jsonString).getJSONArray("results");
@@ -99,45 +99,45 @@ public class MainActivity extends AppCompatActivity {
 
                 if (StringUtils.equals("DE", isoCode)) {
                     String neighborhood = currentObject.getString("adminArea6");
-                    String city = currentObject.getString("adminArea5");
+                    String name = currentObject.getString("adminArea5");
                     String state = currentObject.getString("adminArea3");
                     String countryIsoCode = currentObject.getString("adminArea1");
                     Double lat = currentObject.getJSONObject("latLng").getDouble("lat");
                     Double lng = currentObject.getJSONObject("latLng").getDouble("lng");
-                    Country country = new Country(neighborhood, city, state, countryIsoCode, lat, lng);
+                    City city = new City(neighborhood, name, state, countryIsoCode, lat, lng);
 
-                    if (country.isValid()) {
-                        countryList.add(country);
+                    if (city.isValid()) {
+                        cityList.add(city);
                     }
                 }
             }
-            Log.e("list size", Integer.toString(countryList.size()));
-            displayCountryListToUser(countryList);
+            Log.e("list size", Integer.toString(cityList.size()));
+            displayCityListToUser(cityList);
         }
         catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void displayCountryListToUser(List<Country> countryList) {
+    public void displayCityListToUser(List<City> cityList) {
 
-        if (countryList.isEmpty()) {
+        if (cityList.isEmpty()) {
             Toast.makeText(MainActivity.this,"Couldn't find any data for your input", Toast.LENGTH_LONG).show();
             return;
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Please Choose a City");
-        int countryCount = countryList.size();
-        String[] newArr = new String[countryCount];
+        int cityCount = cityList.size();
+        String[] newArr = new String[cityCount];
 
-        for (int i = 0; i < countryCount; i++) {
-            newArr[i] = countryList.get(i).toString();
+        for (int i = 0; i < cityCount; i++) {
+            newArr[i] = cityList.get(i).toString();
         }
         builder.setItems(newArr, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                requestWeatherData(countryList.get(which));
+                requestWeatherData(cityList.get(which));
             }
         });
 
@@ -146,10 +146,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void requestWeatherData(Country responseCountry) {
+    private void requestWeatherData(City responseCity) {
 
         String url = MessageFormat.format("https://api.breezometer.com/weather/v1/current-conditions?lat={0}&lon={1}&key={2}",
-                String.valueOf(responseCountry.getLatitude()), String.valueOf(responseCountry.getLongitude()), BREEZOMETER_API_KEY);
+                String.valueOf(responseCity.getLatitude()), String.valueOf(responseCity.getLongitude()), BREEZOMETER_API_KEY);
 
         RequestQueue queue = RequestQueueSingleton.getInstance(this);
         StringRequest jsonObjReq = new StringRequest(Request.Method.GET, url,
