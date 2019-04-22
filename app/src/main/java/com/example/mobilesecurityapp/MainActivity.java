@@ -38,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
     private EditText inputFieldCity;
     private TextView textViewPreviousSearch;
     private DatabaseHelper database;
-    private boolean isAnyCitySaved;
     private City previousCity;
 
     @Override
@@ -48,8 +47,6 @@ public class MainActivity extends AppCompatActivity {
         inputFieldCity = findViewById(R.id.editTextCity);
         textViewPreviousSearch = findViewById(R.id.textViewPreviousSearch);
         database = new DatabaseHelper(this);
-
-//        database.removeAllData();
 
         Cursor results = database.getAllData();
         while (results.moveToNext()) {
@@ -65,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
             updatePreviousCityOnScreen();
         }
 
-        // TODO make a new weather with the last saved country request when the app starts
     }
 
 
@@ -109,7 +105,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
         queue.add(jsonObjReq);
-//        closeKeyboard();
     }
 
     private void parseCityCoordinates(String jsonString) {
@@ -140,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             Log.e("list size", Integer.toString(cityList.size()));
-            displayCountryListToUser(cityList);
+            displayCityListToUser(cityList);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -161,12 +156,12 @@ public class MainActivity extends AppCompatActivity {
 
         if (previousCity != null) {
             Log.e("city found", "previously saved city found");
-            String text = previousCity.toString() + "\n" + previousCity.getWeatherInfo().toString();
+            String text = previousCity.toString() + "\n\n" + previousCity.getWeatherInfo().toString();
             textViewPreviousSearch.setText(text);
         }
     }
 
-    private void displayCountryListToUser(List<City> cityList) {
+    private void displayCityListToUser(List<City> cityList) {
 
         if (cityList.isEmpty()) {
             Toast.makeText(MainActivity.this,"Couldn't find any data for your input", Toast.LENGTH_LONG).show();
@@ -174,11 +169,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Please Choose a City");
-        int countryCount = cityList.size();
-        String[] newArr = new String[countryCount];
+        builder.setTitle("Please Choose");
+        int cityCount = cityList.size();
+        String[] newArr = new String[cityCount];
 
-        for (int i = 0; i < countryCount; i++) {
+        for (int i = 0; i < cityCount; i++) {
             newArr[i] = cityList.get(i).toString();
         }
         builder.setItems(newArr, new DialogInterface.OnClickListener() {
@@ -207,7 +202,6 @@ public class MainActivity extends AppCompatActivity {
                         if (StringUtils.isNotBlank(stringResponse)) {
                             Log.e("weather", stringResponse);
                             parseWeatherData(selectedCity, stringResponse);
-//                            parseCityCoordinates(stringResponse);
                         }
                     }
                 },
@@ -240,8 +234,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("isInserted", String.valueOf(isInserted));
             }
             else {
-                boolean isInserted = database.updateData(selectedCity);
-                Log.e("isUpdated", "updated country");
+                database.updateData(selectedCity);
+                Log.e("isUpdated", "updated city");
             }
             previousCity = selectedCity;
             updatePreviousCityOnScreen();
