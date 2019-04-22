@@ -6,7 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.text.MessageFormat;
 
-public class WeatherInfo {
+class WeatherInfo {
 
     private String weatherCondition;
     private String temperature;
@@ -19,7 +19,7 @@ public class WeatherInfo {
     public WeatherInfo() {
     }
 
-    public WeatherInfo(String weatherCondition, String temperature, String feelsLikeTemperature, String relativeHumidity, String windSpeed) {
+    WeatherInfo(String weatherCondition, String temperature, String feelsLikeTemperature, String relativeHumidity, String windSpeed) {
         this.weatherCondition = weatherCondition;
         this.temperature = temperature;
         this.feelsLikeTemperature = feelsLikeTemperature;
@@ -33,43 +33,43 @@ public class WeatherInfo {
                 weatherCondition, temperature, feelsLikeTemperature, relativeHumidity, windSpeed);
     }
 
-    public String getWeatherCondition() {
+    String getWeatherCondition() {
         return weatherCondition;
     }
 
-    public void setWeatherCondition(String weatherCondition) {
+    void setWeatherCondition(String weatherCondition) {
         this.weatherCondition = weatherCondition;
     }
 
-    public String getTemperature() {
+    String getTemperature() {
         return temperature;
     }
 
-    public void setTemperature(String temperature) {
+    void setTemperature(String temperature) {
         this.temperature = temperature;
     }
 
-    public String getFeelsLikeTemperature() {
+    String getFeelsLikeTemperature() {
         return feelsLikeTemperature;
     }
 
-    public void setFeelsLikeTemperature(String feelsLikeTemperature) {
+    void setFeelsLikeTemperature(String feelsLikeTemperature) {
         this.feelsLikeTemperature = feelsLikeTemperature;
     }
 
-    public String getRelativeHumidity() {
+    String getRelativeHumidity() {
         return relativeHumidity;
     }
 
-    public void setRelativeHumidity(String relativeHumidity) {
+    void setRelativeHumidity(String relativeHumidity) {
         this.relativeHumidity = relativeHumidity;
     }
 
-    public String getWindSpeed() {
+    String getWindSpeed() {
         return windSpeed;
     }
 
-    public void setWindSpeed(String windSpeed) {
+    void setWindSpeed(String windSpeed) {
         this.windSpeed = windSpeed;
     }
 }

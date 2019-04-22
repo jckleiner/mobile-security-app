@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void displayCountryListToUser(List<City> cityList) {
+    private void displayCountryListToUser(List<City> cityList) {
 
         if (cityList.isEmpty()) {
             Toast.makeText(MainActivity.this,"Couldn't find any data for your input", Toast.LENGTH_LONG).show();
@@ -267,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
-    protected boolean isDeviceOnline() {
+    private boolean isDeviceOnline() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
         if (netInfo != null) {

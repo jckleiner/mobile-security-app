@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 
-public class DatabaseHelper extends SQLiteOpenHelper {
+class DatabaseHelper extends SQLiteOpenHelper {
 
     // get an instance of SQLiteDatabase
     private SQLiteDatabase writableDatabase = getWritableDatabase();
@@ -15,7 +15,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     // these are NOT CASE SENSITIVE
     private static final String DATABASE_NAME = "WeatherApp.db";
-    public static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 1;
     private static final String TABLE_NAME = "city";
     private static final String ID_COLUMN = "id";
     private static final String NEIGHBORHOOD_COLUMN = "neighborhood";
@@ -37,7 +37,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // public DatabaseHelper(Context context, String name, SQLiteDatabase.CursorFactory factory,
     //                      int version)
     // this will create the database and tables
-    public DatabaseHelper(Context context) {
+    DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
@@ -66,7 +66,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return false;
     }
 
-    public boolean insertData(City cityToInsert) {
+    boolean insertData(City cityToInsert) {
         // Create a new map of values, where column names are the keys
         ContentValues contentValues = new ContentValues();
         contentValues.put(ID_COLUMN, 1);
@@ -85,7 +85,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return true;
     }
 
-    public Cursor getAllData() {
+    Cursor getAllData() {
         return writableDatabase.rawQuery("SELECT * FROM " + TABLE_NAME, null);
     }
 
@@ -95,7 +95,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
 
-    public boolean updateData(City cityToUpdate) {
+    boolean updateData(City cityToUpdate) {
         ContentValues contentValues = new ContentValues();
         contentValues.put(ID_COLUMN, 1);
         contentValues.put(NEIGHBORHOOD_COLUMN, cityToUpdate.getNeighborhood());
