@@ -1,5 +1,6 @@
 package com.example.mobilesecurityapp;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.database.Cursor;
@@ -10,6 +11,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -47,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
         textViewPreviousSearch = findViewById(R.id.textViewPreviousSearch);
         database = new DatabaseHelper(this);
 
+//        database.removeAllData();
 
         Cursor results = database.getAllData();
         while (results.moveToNext()) {
@@ -78,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "No Internet Connection",Toast.LENGTH_SHORT).show();
             return;
         }
+        hideKeyboard(this);
         // url encoding for spaces
         userInput = userInput.replace(" ", "%20");
         // Construct the URL
@@ -201,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(String stringResponse) {
                         if (StringUtils.isNotBlank(stringResponse)) {
-                            Log.d("weather", stringResponse);
+                            Log.e("weather", stringResponse);
                             parseWeatherData(selectedCity, stringResponse);
 //                            parseCityCoordinates(stringResponse);
                         }
@@ -252,16 +256,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-// TODO doesn't work?
-//    private void closeKeyboard() {
-//        // The view that has currently focus
-//        View view = this.getCurrentFocus();
-//        if (view != null) {
-//            InputMethodManager inputMethodManager =
-//                    (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-//            inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
-//        }
-//    }
+    private void hideKeyboard(Activity activity) {
+        InputMethodManager imm = (InputMethodManager) activity.getSystemService(Activity.INPUT_METHOD_SERVICE);
+        //Find the currently focused view, so we can grab the correct window token from it.
+        View view = activity.getCurrentFocus();
+        //If no view currently has focus, create a new one, just so we can grab a window token from it
+        if (view == null) {
+            view = new View(activity);
+        }
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
 
     protected boolean isDeviceOnline() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);

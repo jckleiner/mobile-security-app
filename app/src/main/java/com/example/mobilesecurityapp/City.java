@@ -38,11 +38,11 @@ public class City {
     @Override
     public @NonNull String toString() {
         String str = null;
-        if (StringUtils.isNotEmpty(this.name)) {
-            str = this.name;
+        if (StringUtils.isNotEmpty(this.neighborhood)) {
+            str = this.neighborhood;
         }
         else {
-            str = this.neighborhood;
+            str = this.name;
         }
         return MessageFormat.format("{0}, {1}, {2}", str, state, countryIsoCode);
     }

@@ -90,7 +90,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     public void removeAllData() {
-        writableDatabase.execSQL("DROP TABLE " + TABLE_NAME);
+        writableDatabase.execSQL(SQL_DELETE_TABLE);
         onCreate(writableDatabase);
     }
 
