@@ -4,6 +4,7 @@ import android.support.annotation.NonNull;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.math.BigDecimal;
 import java.text.MessageFormat;
 
 class WeatherInfo {
@@ -29,8 +30,8 @@ class WeatherInfo {
 
     @Override
     public @NonNull String toString() {
-        return MessageFormat.format("The weather today is {0}.\nTemperature: {1} C\nFeels like: {2} C\nHumidity: {3} %\nWind speed: {4} km/h\nAir quality: ...",
-                weatherCondition, temperature, feelsLikeTemperature, relativeHumidity, windSpeed);
+        return MessageFormat.format("The weather today is {0}.\nTemperature: {1} C\nFeels like: {2} C\nHumidity: {3} %\nWind speed: {4} km/h",
+                weatherCondition, temperature, feelsLikeTemperature, relativeHumidity, getWindSpeed());
     }
 
     String getWeatherCondition() {
@@ -66,7 +67,15 @@ class WeatherInfo {
     }
 
     String getWindSpeed() {
-        return windSpeed;
+        try {
+            BigDecimal bd = new BigDecimal(windSpeed);
+            bd = bd.setScale(2, BigDecimal.ROUND_HALF_UP);
+            return bd.toString();
+
+        }
+        catch (NumberFormatException e) {
+            return windSpeed;
+        }
     }
 
     void setWindSpeed(String windSpeed) {

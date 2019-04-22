@@ -17,6 +17,7 @@ class City {
     private Double latitude;
     private Double longitude;
     private WeatherInfo weatherInfo;
+    private AirQualityInfo airQualityInfo;
 
     public City() {
     }
@@ -62,6 +63,10 @@ class City {
         }
         return MessageFormat.format("{0}, {1}, {2}", str, state, countryIsoCode);
     }
+
+    AirQualityInfo getAirQualityInfo() { return airQualityInfo; }
+
+    void setAirQualityInfo(AirQualityInfo airQualityInfo) { this.airQualityInfo = airQualityInfo; }
 
     WeatherInfo getWeatherInfo() {
         return weatherInfo;

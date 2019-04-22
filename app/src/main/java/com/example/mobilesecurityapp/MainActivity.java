@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
             Double longitude = results.getDouble(6);
             previousCity = new City(neighborhood, city, state, isoCode, latitude, longitude);
             requestWeatherData(previousCity);
+            requestAirQualityData(previousCity);
             updatePreviousCityOnScreen();
         }
 
@@ -168,8 +169,17 @@ public class MainActivity extends AppCompatActivity {
 
         if (previousCity != null) {
             Log.e("city found", "previously saved city found");
-            String text = previousCity.toString() + "\n\n" + previousCity.getWeatherInfo().toString();
-            textViewPreviousSearch.setText(text);
+            StringBuilder textBuilder = new StringBuilder(previousCity.toString());
+            if (previousCity.getWeatherInfo() != null)
+                textBuilder.append("\n\n" + previousCity.getWeatherInfo().toString());
+            else
+                textBuilder.append("\n\nNo whather information found.");
+            if (previousCity.getAirQualityInfo() != null)
+                textBuilder.append("\n\n" + previousCity.getAirQualityInfo().toString());
+            else
+                textBuilder.append("\n\nNo Air quality information found.");
+
+            textViewPreviousSearch.setText(textBuilder.toString());
         }
     }
 
@@ -199,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(DialogInterface dialog, int which) {
                 City selectedCity = cityList.get(which);
                 requestWeatherData(selectedCity);
+                requestAirQualityData(selectedCity);
             }
         });
 
@@ -261,6 +272,65 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("weatherText: " + weatherCondition + ", temp: " + String.valueOf(temperature) + " C");
             Log.d("-", MessageFormat.format("Feels like {0} {1}. Humidity: {2}%",feelsLikeTemperature , " C", relativeHumidity));
             Log.d("-", MessageFormat.format("Wind speed: {0} {1}",windSpeed , " km/h"));
+
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void requestAirQualityData(City selectedCity) {
+
+        String url = MessageFormat.format("https://api.breezometer.com/air-quality/v2/current-conditions?lat={0}&lon={1}&key={2}",
+                String.valueOf(selectedCity.getLatitude()), String.valueOf(selectedCity.getLongitude()), BREEZOMETER_API_KEY);
+
+        System.out.println(url);
+
+        RequestQueue queue = RequestQueueSingleton.getInstance(this);
+        StringRequest jsonObjReq = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String stringResponse) {
+                        if (StringUtils.isNotBlank(stringResponse)) {
+                            Log.e("air quality", stringResponse);
+                            parseAirQualityData(selectedCity, stringResponse);
+                        }
+                    }
+                },
+                new Response.ErrorListener(){
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Toast.makeText(MainActivity.this,"Oops, something went wrong.", Toast.LENGTH_LONG).show();
+                    }
+                });
+        queue.add(jsonObjReq);
+    }
+
+    private void parseAirQualityData(City selectedCity, String jsonString) {
+        try{
+            JSONObject jsonObjectData = new JSONObject(jsonString).getJSONObject("data").getJSONObject("indexes").getJSONObject("baqi");
+
+            String airQualityDescription = jsonObjectData.getString("category");
+            Integer airQualityIndex = jsonObjectData.getInt("aqi");
+            String dominantPollutant = jsonObjectData.getString("dominant_pollutant");
+
+            AirQualityInfo airQualityInfo = new AirQualityInfo(airQualityIndex, airQualityDescription, dominantPollutant);
+
+            selectedCity.setAirQualityInfo(airQualityInfo);
+
+            if (previousCity == null) {
+                boolean isInserted = database.insertData(selectedCity);
+                Log.e("isInserted", String.valueOf(isInserted));
+            }
+            else {
+                database.updateData(selectedCity);
+                Log.e("isUpdated", "updated city");
+            }
+            previousCity = selectedCity;
+            updatePreviousCityOnScreen();
+
+            System.out.println("air quality description: " + airQualityDescription + ", air quality index: " + String.valueOf(airQualityIndex));
+            Log.d("-", MessageFormat.format("Dominant pollutant {0}",dominantPollutant));
 
         }
         catch (Exception e) {
