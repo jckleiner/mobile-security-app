@@ -6,6 +6,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.MessageFormat;
+import java.util.Objects;
 
 class City {
 
@@ -31,18 +32,33 @@ class City {
 
     boolean isValid() {
         return ObjectUtils.allNotNull(this.longitude, this.latitude)
-                && StringUtils.isNoneBlank(this.state, this.countryIsoCode)
-                && !StringUtils.isAllBlank(this.neighborhood, this.name);
+                && StringUtils.isNoneBlank(this.state, this.countryIsoCode, this.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.name, this.state, this.countryIsoCode);
+    }
+
+    @Override
+    public boolean equals(Object other){
+        if (!(other instanceof City)) {
+            return false;
+        }
+        City secondCity = (City) other;
+        return StringUtils.equals(this.name, secondCity.getName())
+                && StringUtils.equals(this.state, secondCity.getState())
+                && StringUtils.equals(this.countryIsoCode, secondCity.getCountryIsoCode());
     }
 
     @Override
     public @NonNull String toString() {
         String str = null;
-        if (StringUtils.isNotEmpty(this.neighborhood)) {
-            str = this.neighborhood;
+        if (StringUtils.isNotEmpty(this.name)) {
+            str = this.name;
         }
         else {
-            str = this.name;
+            str = this.neighborhood;
         }
         return MessageFormat.format("{0}, {1}, {2}", str, state, countryIsoCode);
     }

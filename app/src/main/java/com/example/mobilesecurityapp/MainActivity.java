@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,7 +29,9 @@ import org.json.JSONObject;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,9 +39,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String BREEZOMETER_API_KEY = "8c666930d6914fd092a826bbb854ed3b";
 
     private EditText inputFieldCity;
+    private CheckBox checkBoxOnlyGermany;
     private TextView textViewPreviousSearch;
     private DatabaseHelper database;
     private City previousCity;
+    private String userInput;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         inputFieldCity = findViewById(R.id.editTextCity);
         textViewPreviousSearch = findViewById(R.id.textViewPreviousSearch);
+        checkBoxOnlyGermany = findViewById(R.id.checkBoxOnlyGermany);
         database = new DatabaseHelper(this);
 
         Cursor results = database.getAllData();
@@ -64,9 +70,8 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
     public void requestCityInformation(View view) {
-        String userInput = inputFieldCity.getText().toString().trim().toLowerCase();
+        userInput = inputFieldCity.getText().toString().trim().toLowerCase();
 
         if (userInput.equals("")){
             Toast.makeText(this, "Please enter a city name",Toast.LENGTH_SHORT).show();
@@ -78,10 +83,8 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         hideKeyboard(this);
-        // url encoding for spaces
-        userInput = userInput.replace(" ", "%20");
         // Construct the URL
-        String url = MessageFormat.format("https://open.mapquestapi.com/geocoding/v1/address?key={0}&location={1},DE"
+        String url = MessageFormat.format("https://open.mapquestapi.com/geocoding/v1/address?key={0}&location={1}"
                 , MAPREQUEST_API_KEY, userInput);
 
         Log.d("userInput" , userInput);
@@ -109,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void parseCityCoordinates(String jsonString) {
         Log.d("response", jsonString);
-        List<City> cityList =  new ArrayList<>();
+        Set<City> citySet =  new HashSet<>();
 
         try{
             JSONArray jsonArrayAllData = new JSONObject(jsonString).getJSONArray("results");
@@ -120,7 +123,6 @@ public class MainActivity extends AppCompatActivity {
                 String isoCode = currentObject.getString("adminArea1");
                 Log.e("isoCode" , isoCode);
 
-                if (StringUtils.equals("DE", isoCode)) {
                     String neighborhood = currentObject.getString("adminArea6");
                     String name = currentObject.getString("adminArea5");
                     String state = currentObject.getString("adminArea3");
@@ -129,13 +131,23 @@ public class MainActivity extends AppCompatActivity {
                     Double lng = currentObject.getJSONObject("latLng").getDouble("lng");
                     City city = new City(neighborhood, name, state, countryIsoCode, lat, lng);
 
-                    if (city.isValid()) {
-                        cityList.add(city);
+                    Log.e("name", name);
+                    Log.e("user input", userInput);
+
+
+                    if (!checkBoxOnlyGermany.isChecked() && city.isValid() && StringUtils.equalsIgnoreCase(name, userInput)) {
+                        citySet.add(city);
                     }
-                }
+                    else if (checkBoxOnlyGermany.isChecked()
+                            && StringUtils.equalsIgnoreCase("DE", isoCode)
+                            && city.isValid()
+                            && StringUtils.equalsIgnoreCase(name, userInput)) {
+                        citySet.add(city);
+                    }
+
             }
-            Log.e("list size", Integer.toString(cityList.size()));
-            displayCityListToUser(cityList);
+            Log.e("list size", Integer.toString(citySet.size()));
+            displayCityListToUser(citySet);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -161,16 +173,22 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void displayCityListToUser(List<City> cityList) {
+    private void displayCityListToUser(Set<City> citySet) {
 
-        if (cityList.isEmpty()) {
+        if (citySet.isEmpty()) {
             Toast.makeText(MainActivity.this,"Couldn't find any data for your input", Toast.LENGTH_LONG).show();
             return;
         }
+        List<City> cityList = new ArrayList<>(citySet);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Please Choose");
         int cityCount = cityList.size();
+
+        if (cityCount == 1) {
+            requestWeatherData(cityList.get(0));
+            return;
+        }
         String[] newArr = new String[cityCount];
 
         for (int i = 0; i < cityCount; i++) {
