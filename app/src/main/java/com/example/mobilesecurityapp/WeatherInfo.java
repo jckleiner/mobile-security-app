@@ -15,8 +15,6 @@ class WeatherInfo {
     private String relativeHumidity;
     private String windSpeed;
 
-    // TODO add weather quality fields when its implemented
-
     public WeatherInfo() {
     }
 
